@@ -49,12 +49,16 @@ private:
 
     void mousePressEvent(QMouseEvent *ev) final
     {
-        if (!(ev->buttons() & Qt::LeftButton)) {
-            return;
-        }
-
         lastX = ev->x();
         lastY = ev->y();
+
+        if (ev->type() == QEvent::MouseButtonDblClick) {
+            if (ev->buttons() == Qt::LeftButton) {
+                m_map.scaleBy(2.0, lastX, lastY);
+            } else if (ev->buttons() == Qt::RightButton) {
+                m_map.scaleBy(0.5, lastX, lastY);
+            }
+        }
 
         ev->accept();
     }
@@ -80,14 +84,16 @@ private:
 
     void wheelEvent(QWheelEvent *ev) final
     {
-        int numDegrees = ev->delta() / 8;
-
-        if (numDegrees > 0) {
-            m_map.scaleBy(1.10, ev->x(), ev->y());
-        } else {
-            m_map.scaleBy(0.90, ev->x(), ev->y());
+        if (ev->orientation() == Qt::Horizontal) {
+            return;
         }
 
+        float factor = ev->delta() / 1200.;
+        if (ev->delta() < 0) {
+            factor = factor > -1 ? factor : 1 / factor;
+        }
+
+        m_map.scaleBy(1 + factor, ev->x(), ev->y());
         ev->accept();
     }
 
