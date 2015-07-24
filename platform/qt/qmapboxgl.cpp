@@ -149,4 +149,5 @@ void QMapboxGLPrivate::swap()
 
 void QMapboxGLPrivate::triggerRender() {
     mapObj.renderSync();
+    mapObj.nudgeTransitions();
 }
