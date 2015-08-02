@@ -34,7 +34,8 @@ MapContext::MapContext(View& view_, FileSource& fileSource, MapData& data_)
       data(data_),
       updated(static_cast<UpdateType>(Update::Nothing)),
       asyncUpdate(std::make_unique<uv::async>(util::RunLoop::getLoop(), [this] { update(); })),
-      texturePool(std::make_unique<TexturePool>()) {
+      texturePool(std::make_unique<TexturePool>()),
+      viewInvalidated(false) {
     assert(util::ThreadContext::currentlyOn(util::ThreadType::Map));
 
     util::ThreadContext::setFileSource(&fileSource);
@@ -271,8 +272,8 @@ void MapContext::update() {
     style->update(transformState, *texturePool);
 
     if (data.mode == MapMode::Continuous) {
-        view.invalidate();
-    } else if (callback && style->isLoaded()) {
+        invalidateView();
+    } else if (callback && isLoaded()) {
         renderSync(transformState, frameData);
     }
 
@@ -341,8 +342,10 @@ MapContext::RenderResult MapContext::renderSync(const TransformState& state, con
 
     view.swap();
 
+    viewInvalidated = false;
+
     return RenderResult {
-        style->isLoaded(),
+        isLoaded(),
         style->hasTransitions() || painter->needsAnimation()
     };
 }
@@ -369,7 +372,7 @@ void MapContext::setSourceTileCacheSize(size_t size) {
         for (const auto &source : style->sources) {
             source->setCacheSize(sourceCacheSize);
         }
-        view.invalidate();
+        invalidateView();
     }
 }
 
@@ -379,7 +382,7 @@ void MapContext::onLowMemory() {
     for (const auto &source : style->sources) {
         source->onLowMemory();
     }
-    view.invalidate();
+    invalidateView();
 }
 
 void MapContext::setSprite(const std::string& name, std::shared_ptr<const SpriteImage> sprite) {
@@ -406,6 +409,13 @@ void MapContext::onResourceLoadingFailed(std::exception_ptr error) {
     if (data.mode == MapMode::Still && callback) {
         callback(error, nullptr);
         callback = nullptr;
+    }
+}
+
+void MapContext::invalidateView() {
+    if (!viewInvalidated) {
+        viewInvalidated = true;
+        view.invalidate();
     }
 }
 
