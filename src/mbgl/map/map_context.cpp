@@ -255,6 +255,9 @@ void MapContext::update() {
 
     if (!style) {
         updated = static_cast<UpdateType>(Update::Nothing);
+    }
+
+    if (updated == static_cast<UpdateType>(Update::Nothing)) {
         return;
     }
 
@@ -314,12 +317,12 @@ void MapContext::renderStill(const TransformState& state, const FrameData& frame
     asyncUpdate->send();
 }
 
-MapContext::RenderResult MapContext::renderSync(const TransformState& state, const FrameData& frame) {
+bool MapContext::renderSync(const TransformState& state, const FrameData& frame) {
     assert(util::ThreadContext::currentlyOn(util::ThreadType::Map));
 
     // Style was not loaded yet.
     if (!style) {
-        return { false, false };
+        return false;
     }
 
     transformState = state;
@@ -344,10 +347,11 @@ MapContext::RenderResult MapContext::renderSync(const TransformState& state, con
 
     viewInvalidated = false;
 
-    return RenderResult {
-        isLoaded(),
-        style->hasTransitions() || painter->needsAnimation()
-    };
+    if (style->hasTransitions() || painter->needsAnimation()) {
+        data.setNeedsRepaint(true);
+    }
+
+    return isLoaded();
 }
 
 bool MapContext::isLoaded() const {
