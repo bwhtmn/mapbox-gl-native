@@ -112,8 +112,7 @@ int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
 
-    QGLContext *context = new QGLContext(QGLFormat());
-    context->create();
+    QGLContext *context = new QGLContext(QGLFormat::defaultFormat());
 
     // MapWindow inherits from QGLWidget and will get
     // the ownership of the QGLContext while internally
