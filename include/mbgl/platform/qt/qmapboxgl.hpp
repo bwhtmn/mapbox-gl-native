@@ -35,6 +35,7 @@ public:
 
     void moveBy(double dx, double dy);
     void scaleBy(double ds, double cx, double cy);
+    void rotateBy(double sx, double sy, double ex, double ey);
 
     void resize(int w, int h);
 

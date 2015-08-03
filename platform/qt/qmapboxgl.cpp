@@ -71,6 +71,10 @@ void QMapboxGL::scaleBy(double ds, double cx, double cy) {
     d_ptr->mapObj.scaleBy(ds, cx, cy);
 }
 
+void QMapboxGL::rotateBy(double sx, double sy, double ex, double ey) {
+    d_ptr->mapObj.rotateBy(sx, sy, ex, ey);
+}
+
 void QMapboxGL::resize(int w, int h)
 {
     d_ptr->size = {{ static_cast<uint16_t>(w), static_cast<uint16_t>(h) }};

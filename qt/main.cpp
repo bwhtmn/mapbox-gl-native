@@ -65,19 +65,19 @@ private:
 
     void mouseMoveEvent(QMouseEvent *ev) final
     {
-        if (!(ev->buttons() & Qt::LeftButton)) {
-            return;
-        }
-
         int dx = ev->x() - lastX;
         int dy = ev->y() - lastY;
 
+        if (dx || dy) {
+            if (ev->buttons() == Qt::LeftButton) {
+                m_map.moveBy(dx, dy);
+            } else if (ev->buttons() == Qt::RightButton) {
+                m_map.rotateBy(lastX, lastY, ev->x(), ev->y());
+            }
+        }
+
         lastX = ev->x();
         lastY = ev->y();
-
-        if (dx || dy) {
-            m_map.moveBy(dx, dy);
-        }
 
         ev->accept();
     }
