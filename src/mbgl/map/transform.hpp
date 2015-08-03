@@ -59,8 +59,9 @@ private:
     void _moveBy(double dx, double dy, const Duration& = Duration::zero());
     void _setScale(double scale, double cx, double cy, const Duration& = Duration::zero());
     void _setScaleXY(double new_scale, double xn, double yn, const Duration& = Duration::zero());
-    void _setScaleXYθ(const double new_scale, const double new_angle, const double xn, const double yn,
-                     const Duration& duration = Duration::zero());
+    void _easeTo(const double new_scale, const double new_angle,
+                 const double xn, const double yn,
+                 const Duration& duration = Duration::zero());
     void _setAngle(double angle, const Duration& = Duration::zero());
 
     View &view;

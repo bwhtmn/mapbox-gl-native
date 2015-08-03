@@ -74,7 +74,7 @@ void Transform::easeTo(const CameraOptions options, const Duration& duration) {
     double xn = -latLng.longitude * state.Bc;
     double yn = 0.5 * state.Cc * std::log((1 + f) / (1 - f));
     
-    _setScaleXYθ(new_scale, angle, xn, yn, duration);
+    _easeTo(new_scale, angle, xn, yn, duration);
 }
 
 void Transform::moveBy(const double dx, const double dy, const Duration& duration) {
@@ -206,10 +206,10 @@ void Transform::_setScale(double new_scale, double cx, double cy, const Duration
 
 void Transform::_setScaleXY(const double new_scale, const double xn, const double yn,
                             const Duration& duration) {
-    _setScaleXYθ(new_scale, state.angle, xn, yn, duration);
+    _easeTo(new_scale, state.angle, xn, yn, duration);
 }
 
-void Transform::_setScaleXYθ(const double new_scale, const double new_angle, const double xn, const double yn,
+void Transform::_easeTo(const double new_scale, const double new_angle, const double xn, const double yn,
                             const Duration& duration) {
     double scale = new_scale;
     double x = xn;
