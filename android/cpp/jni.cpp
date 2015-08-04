@@ -102,6 +102,41 @@ bool throw_error(JNIEnv *env, const char *msg) {
     return true;
 }
 
+bool attach_jni_thread(JavaVM* vm, JNIEnv** env, std::string threadName) {
+    JavaVMAttachArgs args = {JNI_VERSION_1_2, threadName.c_str(), NULL};
+
+    jint ret;
+    *env = nullptr;
+    bool detach = false;
+    ret = vm->GetEnv(reinterpret_cast<void **>(env), JNI_VERSION_1_6);
+    if (ret != JNI_OK) {
+        if (ret != JNI_EDETACHED) {
+            mbgl::Log::Error(mbgl::Event::JNI, "GetEnv() failed with %i", ret);
+            throw new std::runtime_error("GetEnv() failed");
+        } else {
+            ret = vm->AttachCurrentThread(env, &args);
+            if (ret != JNI_OK) {
+                mbgl::Log::Error(mbgl::Event::JNI, "AttachCurrentThread() failed with %i", ret);
+                throw new std::runtime_error("AttachCurrentThread() failed");
+            }
+            detach = true;
+        }
+    }
+
+    return detach;
+}
+
+void detach_jni_thread(JavaVM* vm, JNIEnv** env, bool detach) {
+    if (detach) {
+        jint ret;
+        if ((ret = vm->DetachCurrentThread()) != JNI_OK) {
+            mbgl::Log::Error(mbgl::Event::JNI, "DetachCurrentThread() failed with %i", ret);
+            throw new std::runtime_error("DetachCurrentThread() failed");
+        }
+    }
+    *env = nullptr;
+}
+
 std::string std_string_from_jstring(JNIEnv *env, jstring jstr) {
     std::string str;
 
@@ -1148,6 +1183,8 @@ extern "C" {
 extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     mbgl::Log::Debug(mbgl::Event::JNI, "JNI_OnLoad");
 
+    theJVM = vm;
+
     JNIEnv *env = nullptr;
     jint ret = vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (ret != JNI_OK) {
@@ -1698,11 +1735,15 @@ extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     __system_property_get("ro.build.version.release", release);
     androidRelease = std::string(release);
 
+    theJVM = nullptr;
+
     return JNI_VERSION_1_6;
 }
 
 extern "C" JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved) {
     mbgl::Log::Debug(mbgl::Event::JNI, "JNI_OnUnload");
+
+    theJVM = vm;
 
     JNIEnv *env = nullptr;
     jint ret = vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
@@ -1781,5 +1822,7 @@ extern "C" JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved) {
 
     env->DeleteGlobalRef(httpContextClass);
     httpContextGetInstanceId = nullptr;
+
+    theJVM = nullptr;
 }
 }

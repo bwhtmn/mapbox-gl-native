@@ -8,8 +8,16 @@ typedef class _jclass* jclass;
 typedef struct _jmethodID* jmethodID;
 typedef struct _jfieldID* jfieldID;
 
+struct _JavaVM;
+typedef _JavaVM JavaVM;
+
+struct _JNIEnv;
+typedef _JNIEnv JNIEnv;
+
 namespace mbgl {
 namespace android {
+
+extern JavaVM* theJVM;
 
 extern std::string cachePath;
 extern std::string dataPath;
@@ -75,6 +83,9 @@ extern jfieldID pointFYId;
 
 extern jclass httpContextClass;
 extern jmethodID httpContextGetInstanceId;
+
+extern bool attach_jni_thread(JavaVM* vm, JNIEnv** env, std::string threadName);
+extern void detach_jni_thread(JavaVM* vm, JNIEnv** env, bool detach);
 
 }
 }

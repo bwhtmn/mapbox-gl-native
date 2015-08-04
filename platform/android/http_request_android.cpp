@@ -4,9 +4,12 @@
 #include <mbgl/storage/response.hpp>
 #include <mbgl/util/chrono.hpp>
 #include <mbgl/platform/log.hpp>
+#include <mbgl/android/jni.hpp>
 
 #include <mbgl/util/time.hpp>
 #include <mbgl/util/util.hpp>
+
+#include <jni.h>
 
 namespace mbgl {
 
@@ -23,6 +26,9 @@ public:
                                std::shared_ptr<const Response>) final;
 
     uv_loop_t *loop = nullptr;
+
+    JavaVM *vm = nullptr;
+    jobject obj = nullptr;
 
     // TODO permanent java handle to the java singleton
 };
@@ -69,12 +75,35 @@ private:
 
 HTTPAndroidContext::HTTPAndroidContext(uv_loop_t *loop_)
     : HTTPContextBase(loop_),
-      loop(loop_) {
-    // TODO create java singleton
+      loop(loop_),
+      vm(mbgl::android::theJVM) {
+
+    JNIEnv *env = nullptr;
+    bool detach = mbgl::android::attach_jni_thread(vm, &env, "HTTPAndroidContext::HTTPAndroidContext()");
+
+    obj = env->CallObjectMethod(mbgl::android::httpContextClass, mbgl::android::httpContextGetInstanceId);
+    if (env->ExceptionCheck() || (obj == nullptr)) {
+        env->ExceptionDescribe();
+    }
+
+    obj = env->NewGlobalRef(obj);
+    if (obj == nullptr) {
+        env->ExceptionDescribe();
+    }
+
+    mbgl::android::detach_jni_thread(vm, &env, detach);
 }
 
 HTTPAndroidContext::~HTTPAndroidContext() {
-    // TODO delete java singleton
+    JNIEnv *env = nullptr;
+    bool detach = mbgl::android::attach_jni_thread(vm, &env, "HTTPAndroidContext::~HTTPAndroidContext()");
+
+    env->DeleteGlobalRef(obj);
+    obj = nullptr;
+
+    mbgl::android::detach_jni_thread(vm, &env, detach);
+
+    vm = nullptr;
 }
 
 HTTPRequestBase* HTTPAndroidContext::createRequest(const Resource& resource,
