@@ -2,9 +2,13 @@
 #define MBGL_ANDROID_JNI
 
 #include <string>
+#include <vector>
 
 // Forward definition of JNI types
 typedef class _jclass* jclass;
+typedef class _jstring* jstring;
+typedef class _jobject* jobject;
+typedef class _jlongArray* jlongArray;
 typedef struct _jmethodID* jmethodID;
 typedef struct _jfieldID* jfieldID;
 
@@ -83,9 +87,16 @@ extern jfieldID pointFYId;
 
 extern jclass httpContextClass;
 extern jmethodID httpContextGetInstanceId;
+extern jmethodID httpContextCreateRequestId;
 
+extern bool throw_jni_error(JNIEnv *env, const char *msg);
 extern bool attach_jni_thread(JavaVM* vm, JNIEnv** env, std::string threadName);
 extern void detach_jni_thread(JavaVM* vm, JNIEnv** env, bool detach);
+extern std::string std_string_from_jstring(JNIEnv *env, jstring jstr);
+extern jstring std_string_to_jstring(JNIEnv *env, std::string str);
+extern std::vector<std::string> std_vector_string_from_jobject(JNIEnv *env, jobject jlist);
+extern jobject std_vector_string_to_jobject(JNIEnv *env, std::vector<std::string> vector);
+extern jlongArray std_vector_uint_to_jobject(JNIEnv *env, std::vector<uint32_t> vector);
 
 }
 }

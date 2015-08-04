@@ -29,8 +29,6 @@ public:
 
     JavaVM *vm = nullptr;
     jobject obj = nullptr;
-
-    // TODO permanent java handle to the java singleton
 };
 
 class HTTPAndroidRequest : public HTTPRequestBase {
@@ -62,7 +60,7 @@ private:
     std::unique_ptr<Response> response;
     const std::shared_ptr<const Response> existingResponse;
 
-    // TODO permanent java handle to the java request
+    jobject obj = nullptr;
 
     uv_timer_t *timer = nullptr;
     enum : bool { PreemptImmediately, ExponentialBackoff } strategy = PreemptImmediately;
@@ -81,7 +79,7 @@ HTTPAndroidContext::HTTPAndroidContext(uv_loop_t *loop_)
     JNIEnv *env = nullptr;
     bool detach = mbgl::android::attach_jni_thread(vm, &env, "HTTPAndroidContext::HTTPAndroidContext()");
 
-    obj = env->CallObjectMethod(mbgl::android::httpContextClass, mbgl::android::httpContextGetInstanceId);
+    obj = env->CallStaticObjectMethod(mbgl::android::httpContextClass, mbgl::android::httpContextGetInstanceId);
     if (env->ExceptionCheck() || (obj == nullptr)) {
         env->ExceptionDescribe();
     }
@@ -120,7 +118,25 @@ HTTPAndroidRequest::HTTPAndroidRequest(HTTPAndroidContext* context_, const Resou
 
     // TODO 304 stuff for etag/time
 
-    // TODO create the java request object
+    JNIEnv *env = nullptr;
+    bool detach = mbgl::android::attach_jni_thread(context->vm, &env, "HTTPAndroidContext::HTTPAndroidRequest()");
+
+    // TODO fill these out
+    jstring resourceUrl = mbgl::android::std_string_to_jstring(env, "");
+    jstring userAgent = mbgl::android::std_string_to_jstring(env, "");
+    jstring etag = mbgl::android::std_string_to_jstring(env, "");
+    jstring modified = mbgl::android::std_string_to_jstring(env, "");
+    obj = env->CallObjectMethod(context->obj, mbgl::android::httpContextCreateRequestId, reinterpret_cast<jlong>(this), resourceUrl, userAgent, etag, modified);
+    if (env->ExceptionCheck() || (obj == nullptr)) {
+      env->ExceptionDescribe();
+    }
+
+    obj = env->NewGlobalRef(obj);
+    if (obj == nullptr) {
+      env->ExceptionDescribe();
+    }
+
+    mbgl::android::detach_jni_thread(context->vm, &env, detach);
 
     start();
 }
@@ -128,7 +144,13 @@ HTTPAndroidRequest::HTTPAndroidRequest(HTTPAndroidContext* context_, const Resou
 HTTPAndroidRequest::~HTTPAndroidRequest() {
     context->removeRequest(this);
 
-    // TODO delete the java request object
+    JNIEnv *env = nullptr;
+    bool detach = mbgl::android::attach_jni_thread(context->vm, &env, "HTTPAndroidContext::~HTTPAndroidRequest()");
+
+    env->DeleteGlobalRef(obj);
+    obj = nullptr;
+
+    mbgl::android::detach_jni_thread(context->vm, &env, detach);
 
     if (timer) {
         uv_timer_stop(timer);

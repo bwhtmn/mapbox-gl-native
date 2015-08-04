@@ -93,7 +93,7 @@ jfieldID pointFYId = nullptr;
 jclass httpContextClass = nullptr;
 jmethodID httpContextGetInstanceId = nullptr;
 
-bool throw_error(JNIEnv *env, const char *msg) {
+bool throw_jni_error(JNIEnv *env, const char *msg) {
     if (env->ThrowNew(runtimeExceptionClass, msg) < 0) {
         env->ExceptionDescribe();
         return false;
@@ -380,7 +380,7 @@ void JNICALL nativeInitializeDisplay(JNIEnv *env, jobject obj, jlong nativeMapVi
     {
         nativeMapView->initializeDisplay();
     } catch(const std::exception& e) {
-        throw_error(env, "Unable to initialize GL display.");
+        throw_jni_error(env, "Unable to initialize GL display.");
     }
 }
 
@@ -399,7 +399,7 @@ void JNICALL nativeInitializeContext(JNIEnv *env, jobject obj, jlong nativeMapVi
     try {
         nativeMapView->initializeContext();
     } catch(const std::exception& e) {
-        throw_error(env, "Unable to initialize GL context.");
+        throw_jni_error(env, "Unable to initialize GL context.");
     }
 }
 
@@ -418,7 +418,7 @@ void JNICALL nativeCreateSurface(JNIEnv *env, jobject obj, jlong nativeMapViewPt
     try {
         nativeMapView->createSurface(ANativeWindow_fromSurface(env, surface));
     } catch(const std::exception& e) {
-        throw_error(env, "Unable to create GL surface.");
+        throw_jni_error(env, "Unable to create GL surface.");
     }
 }
 
@@ -1492,6 +1492,12 @@ extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
         return JNI_ERR;
     }
 
+    httpContextCreateRequestId = env->GetMethodID(httpContextClass, "createRequest", "(JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/mapbox/mapboxgl/http/HTTPContext$HTTPRequest;");
+    if (httpContextCreateRequestId == nullptr) {
+        env->ExceptionDescribe();
+        return JNI_ERR;
+    }
+
     jclass httpRequestClass = env->FindClass("com/mapbox/mapboxgl/http/HTTPContext$HTTPRequest");
     if (httpRequestClass == nullptr) {
         env->ExceptionDescribe();
@@ -1822,6 +1828,7 @@ extern "C" JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved) {
 
     env->DeleteGlobalRef(httpContextClass);
     httpContextGetInstanceId = nullptr;
+    httpContextCreateRequestId = nullptr;
 
     theJVM = nullptr;
 }
