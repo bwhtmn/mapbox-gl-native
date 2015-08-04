@@ -90,6 +90,9 @@ jmethodID pointFConstructorId = nullptr;
 jfieldID pointFXId = nullptr;
 jfieldID pointFYId = nullptr;
 
+jclass httpContextClass = nullptr;
+jmethodID httpContextGetInstanceId = nullptr;
+
 bool throw_error(JNIEnv *env, const char *msg) {
     if (env->ThrowNew(runtimeExceptionClass, msg) < 0) {
         env->ExceptionDescribe();
@@ -1440,6 +1443,18 @@ extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
         return JNI_ERR;
     }
 
+    httpContextClass = env->FindClass("com/mapbox/mapboxgl/http/HTTPContext");
+    if (httpContextClass == nullptr) {
+        env->ExceptionDescribe();
+        return JNI_ERR;
+    }
+
+    httpContextGetInstanceId = env->GetStaticMethodID(httpContextClass, "getInstance", "()Lcom/mapbox/mapboxgl/http/HTTPContext;");
+    if (httpContextGetInstanceId == nullptr) {
+        env->ExceptionDescribe();
+        return JNI_ERR;
+    }
+
     jclass httpRequestClass = env->FindClass("com/mapbox/mapboxgl/http/HTTPContext$HTTPRequest");
     if (httpRequestClass == nullptr) {
         env->ExceptionDescribe();
@@ -1763,5 +1778,8 @@ extern "C" JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved) {
     pointFConstructorId = nullptr;
     pointFXId = nullptr;
     pointFYId = nullptr;
+
+    env->DeleteGlobalRef(httpContextClass);
+    httpContextGetInstanceId = nullptr;
 }
 }

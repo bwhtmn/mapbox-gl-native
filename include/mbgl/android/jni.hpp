@@ -73,6 +73,9 @@ extern jmethodID pointFConstructorId;
 extern jfieldID pointFXId;
 extern jfieldID pointFYId;
 
+extern jclass httpContextClass;
+extern jmethodID httpContextGetInstanceId;
+
 }
 }
 
