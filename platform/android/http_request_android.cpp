@@ -116,16 +116,23 @@ HTTPAndroidRequest::HTTPAndroidRequest(HTTPAndroidContext* context_, const Resou
       context(context_),
       existingResponse(response_) {
 
-    // TODO 304 stuff for etag/time
+    std::string etagStr;
+    std::string modifiedStr;
+    if (existingResponse) {
+        if (!existingResponse->etag.empty()) {
+            etagStr = existingResponse->etag;
+        } else if (existingResponse->modified) {
+            modifiedStr = util::rfc1123(existingResponse->modified);
+        }
+    }
 
     JNIEnv *env = nullptr;
     bool detach = mbgl::android::attach_jni_thread(context->vm, &env, "HTTPAndroidContext::HTTPAndroidRequest()");
 
-    // TODO fill these out
-    jstring resourceUrl = mbgl::android::std_string_to_jstring(env, "");
-    jstring userAgent = mbgl::android::std_string_to_jstring(env, "");
-    jstring etag = mbgl::android::std_string_to_jstring(env, "");
-    jstring modified = mbgl::android::std_string_to_jstring(env, "");
+    jstring resourceUrl = mbgl::android::std_string_to_jstring(env, resource.url);
+    jstring userAgent = mbgl::android::std_string_to_jstring(env, "MapboxGL/1.0");
+    jstring etag = mbgl::android::std_string_to_jstring(env, etagStr);
+    jstring modified = mbgl::android::std_string_to_jstring(env, modifiedStr);
     obj = env->CallObjectMethod(context->obj, mbgl::android::httpContextCreateRequestId, reinterpret_cast<jlong>(this), resourceUrl, userAgent, etag, modified);
     if (env->ExceptionCheck() || (obj == nullptr)) {
       env->ExceptionDescribe();
