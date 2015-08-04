@@ -1124,6 +1124,20 @@ jobject JNICALL nativeLatLngForPixel(JNIEnv *env, jobject obj, jlong nativeMapVi
     return ret;
 }
 
+void JNICALL nativeOnFailure(JNIEnv *env, jobject obj, jlong nativePtr) {
+    mbgl::Log::Debug(mbgl::Event::JNI, "nativeOnFailure");
+    assert(nativePtr != 0);
+
+    // TODO
+}
+
+void JNICALL nativeOnResponse(JNIEnv *env, jobject obj, jlong nativePtr, jint code, jstring message, jstring etag, jstring mofified, jstring expires, jbyteArray body) {
+    mbgl::Log::Debug(mbgl::Event::JNI, "nativeOnResponse");
+    assert(nativePtr != 0);
+
+    // TODO
+}
+
 }
 
 extern "C" {
@@ -1426,7 +1440,13 @@ extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
         return JNI_ERR;
     }
 
-    const std::vector<JNINativeMethod> methods = {
+    jclass httpRequestClass = env->FindClass("com/mapbox/mapboxgl/http/HTTPContext$HTTPRequest");
+    if (httpRequestClass == nullptr) {
+        env->ExceptionDescribe();
+        return JNI_ERR;
+    }
+
+    const std::vector<JNINativeMethod> nativeMapViewMethods = {
         {"nativeCreate", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;FIJ)J",
          reinterpret_cast<void *>(&nativeCreate)},
         {"nativeDestroy", "(J)V", reinterpret_cast<void *>(&nativeDestroy)},
@@ -1524,13 +1544,31 @@ extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
         //{"nativeGetWorldBoundsMeters", "(J)V", reinterpret_cast<void *>(&nativeGetWorldBoundsMeters)},
         //{"nativeGetWorldBoundsLatLng", "(J)V", reinterpret_cast<void *>(&nativeGetWorldBoundsLatLng)},
         {"nativeGetMetersPerPixelAtLatitude", "(JDD)D", reinterpret_cast<void *>(&nativeGetMetersPerPixelAtLatitude)},
-        {"nativeProjectedMetersForLatLng", "(JLcom/mapbox/mapboxgl/geometry/LatLng;)Lcom/mapbox/mapboxgl/geometry/ProjectedMeters;", reinterpret_cast<void *>(&nativeProjectedMetersForLatLng)},
-        {"nativeLatLngForProjectedMeters", "(JLcom/mapbox/mapboxgl/geometry/ProjectedMeters;)Lcom/mapbox/mapboxgl/geometry/LatLng;", reinterpret_cast<void *>(&nativeLatLngForProjectedMeters)},
-        {"nativePixelForLatLng", "(JLcom/mapbox/mapboxgl/geometry/LatLng;)Landroid/graphics/PointF;", reinterpret_cast<void *>(&nativePixelForLatLng)},
-        {"nativeLatLngForPixel", "(JLandroid/graphics/PointF;)Lcom/mapbox/mapboxgl/geometry/LatLng;", reinterpret_cast<void *>(&nativeLatLngForPixel)},
+        {"nativeProjectedMetersForLatLng",
+         "(JLcom/mapbox/mapboxgl/geometry/LatLng;)Lcom/mapbox/mapboxgl/geometry/ProjectedMeters;",
+         reinterpret_cast<void *>(&nativeProjectedMetersForLatLng)},
+        {"nativeLatLngForProjectedMeters",
+         "(JLcom/mapbox/mapboxgl/geometry/ProjectedMeters;)Lcom/mapbox/mapboxgl/geometry/LatLng;",
+         reinterpret_cast<void *>(&nativeLatLngForProjectedMeters)},
+        {"nativePixelForLatLng", "(JLcom/mapbox/mapboxgl/geometry/LatLng;)Landroid/graphics/PointF;",
+         reinterpret_cast<void *>(&nativePixelForLatLng)},
+        {"nativeLatLngForPixel", "(JLandroid/graphics/PointF;)Lcom/mapbox/mapboxgl/geometry/LatLng;",
+         reinterpret_cast<void *>(&nativeLatLngForPixel)},
     };
 
-    if (env->RegisterNatives(nativeMapViewClass, methods.data(), methods.size()) < 0) {
+    if (env->RegisterNatives(nativeMapViewClass, nativeMapViewMethods.data(), nativeMapViewMethods.size()) < 0) {
+        env->ExceptionDescribe();
+        return JNI_ERR;
+    }
+
+    const std::vector<JNINativeMethod> httpRequestMethods = {
+        {"nativeOnFailure", "(J)V", reinterpret_cast<void *>(&nativeOnFailure)},
+        {"nativeOnResponse",
+         "(JILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[B)V",
+         reinterpret_cast<void *>(&nativeOnResponse)}
+    };
+
+    if (env->RegisterNatives(httpRequestClass, httpRequestMethods.data(), httpRequestMethods.size()) < 0) {
         env->ExceptionDescribe();
         return JNI_ERR;
     }

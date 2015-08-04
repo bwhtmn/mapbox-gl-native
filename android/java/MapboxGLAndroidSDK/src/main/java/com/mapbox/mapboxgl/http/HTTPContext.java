@@ -39,8 +39,8 @@ public class HTTPContext {
 
         private long mNativePtr = 0;
 
-        private native void nativeOnFailure();
-        private native void nativeOnResponse(int code, String message, String etag, String mofified, String expires, byte[] body);
+        private native void nativeOnFailure(long nativePtr);
+        private native void nativeOnResponse(long nativePtr, int code, String message, String etag, String mofified, String expires, byte[] body);
 
         private HTTPRequest(long nativePtr, String resourceUrl, String userAgent, String etag, String modified) {
             mNativePtr = nativePtr;
@@ -57,6 +57,7 @@ public class HTTPContext {
         @Override
         public void onFailure(Request request, IOException e) {
             // TODO calback into JNI
+            nativeOnFailure(mNativePtr);
         }
 
         @Override
@@ -70,7 +71,7 @@ public class HTTPContext {
             byte[] body = response.body().bytes();
             response.body().close();
 
-            nativeOnResponse(response.code(), response.message(), response.header("ETag"), response.header("Last-Modified"), expires, body);
+            nativeOnResponse(mNativePtr, response.code(), response.message(), response.header("ETag"), response.header("Last-Modified"), expires, body);
         }
     }
 }
