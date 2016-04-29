@@ -97,6 +97,8 @@ if [[ ${BUILD_FOR_DEVICE} == true ]]; then
     xcodebuild \
         GCC_GENERATE_DEBUGGING_SYMBOLS=${GCC_GENERATE_DEBUGGING_SYMBOLS} \
         CURRENT_PROJECT_VERSION=${PROJ_VERSION} \
+        ENABLE_BITCODE=YES \
+        DEPLOYMENT_POSTPROCESSING=YES \
         -derivedDataPath ${DERIVED_DATA} \
         -workspace ./platform/ios/ios.xcworkspace \
         -scheme ${SCHEME} \
